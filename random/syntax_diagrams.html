@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SurveyBuilder Parser Syntax Diagrams</title>
+  <script src="https://unpkg.com/railroad-diagrams@1.0.0/railroad-diagrams.js"></script>
+  <style>
+    body { 
+      font-family: monospace; 
+      background: #fff; 
+      color: #222; 
+      margin: 20px;
+      line-height: 1.6;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 2px solid #333;
+      padding-bottom: 10px;
+    }
+    h2 { 
+      margin-top: 2em; 
+      color: #555;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 5px;
+    }
+    /* Railroad diagram styles */
+    svg.railroad-diagram {
+      background-color: hsl(30,20%,95%);
+      margin: 10px 0;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      padding: 10px;
+    }
+    svg.railroad-diagram path {
+      stroke-width: 3;
+      stroke: black;
+      fill: rgba(0,0,0,0);
+    }
+    svg.railroad-diagram text {
+      font: bold 14px monospace;
+      text-anchor: middle;
+      white-space: pre;
+    }
+    svg.railroad-diagram text.diagram-text {
+      font-size: 12px;
+    }
+    svg.railroad-diagram text.diagram-arrow {
+      font-size: 16px;
+    }
+    svg.railroad-diagram text.label {
+      text-anchor: start;
+    }
+    svg.railroad-diagram text.comment {
+      font: italic 12px monospace;
+    }
+    svg.railroad-diagram g.non-terminal text {
+      /*font-style: italic;*/
+    }
+    svg.railroad-diagram rect {
+      stroke-width: 3;
+      stroke: black;
+      fill: hsl(120,100%,90%);
+    }
+    svg.railroad-diagram rect.group-box {
+      stroke: gray;
+      stroke-dasharray: 10 5;
+      fill: none;
+    }
+    svg.railroad-diagram path.diagram-text {
+      stroke-width: 3;
+      stroke: black;
+      fill: white;
+      cursor: help;
+    }
+    svg.railroad-diagram g.diagram-text:hover path.diagram-text {
+      fill: #eee;
+    }
+    .diagram-container {
+      margin-bottom: 30px;
+    }
+  </style>
+</head>
+<body>
+  <h1>SurveyBuilder Parser Syntax Diagrams</h1>
+  <p>These diagrams show the syntax rules for the SurveyBuilder expression parser.</p>
+  <div id="diagrams"></div>
+  <script>
+    // Helper for shorter syntax - will be set after library loads
+    let T, NT, CR, S, D;
+
+    function addDiagram(title, diagram) {
+      const container = document.createElement('div');
+      container.className = 'diagram-container';
+      container.innerHTML = `<h2>${title}</h2>`;
+      
+      try {
+        // The railroad-diagrams library returns a FakeSVG object
+        // We need to convert it to proper HTML
+        const formatted = diagram.format();
+        console.log('diagram.format() returned:', typeof formatted, formatted);
+        
+        // Create a container div and insert the SVG as HTML string
+        const svgContainer = document.createElement('div');
+        
+        // The FakeSVG object has a toString method that returns proper SVG markup
+        const svgMarkup = formatted.toString();
+        console.log('SVG markup:', svgMarkup);
+        
+        svgContainer.innerHTML = svgMarkup;
+        
+        console.log('Created SVG container:', svgContainer);
+        container.appendChild(svgContainer);
+      } catch (error) {
+        console.error('Error adding diagram:', error);
+        const errorDiv = document.createElement('div');
+        errorDiv.innerHTML = `<p style="color: red;">Error rendering ${title}: ${error.message}</p>`;
+        container.appendChild(errorDiv);
+      }
+      
+      document.getElementById('diagrams').appendChild(container);
+    }
+
+    // Wait for the library to load
+    window.addEventListener('load', function() {
+      console.log('Page loaded, checking for railroad diagram functions...');
+      console.log('Available functions:', Object.keys(window));
+      
+      // Try different possible exports
+      if (window.Diagram) {
+        // Direct exports
+        T = window.Terminal;
+        NT = window.NonTerminal;
+        CR = window.Choice;
+        S = window.Sequence;
+        D = window.Diagram;
+      } else if (window.RailroadDiagram) {
+        // Namespaced exports
+        T = window.RailroadDiagram.Terminal;
+        NT = window.RailroadDiagram.NonTerminal;
+        CR = window.RailroadDiagram.Choice;
+        S = window.RailroadDiagram.Sequence;
+        D = window.RailroadDiagram.Diagram;
+      } else {
+        document.getElementById('diagrams').innerHTML = '<p style="color: red;">Error: Railroad diagram library failed to load. Available functions: ' + Object.keys(window).filter(k => k.includes('rail') || k.includes('Rail') || k.includes('Diagram') || k.includes('Terminal')).join(', ') + '</p>';
+        return;
+      }
+      
+      if (!T || !NT || !CR || !S || !D) {
+        document.getElementById('diagrams').innerHTML = '<p style="color: red;">Error: Could not find railroad diagram functions. T=' + typeof T + ', NT=' + typeof NT + ', CR=' + typeof CR + ', S=' + typeof S + ', D=' + typeof D + '</p>';
+        return;
+      }
+      
+      console.log('Railroad diagram functions loaded successfully!');
+
+      // Diagrams for all rules
+
+      addDiagram("expressionRule",
+        D(NT("booleanExpressionRule"))
+      );
+
+      addDiagram("booleanExpressionRule",
+        D(
+          CR(0,
+            NT("comparisonRule"),
+            NT("logicalRule")
+          )
+        )
+      );
+
+      addDiagram("comparisonRule",
+        D(
+          CR(0,
+            NT("equalsRule"),
+            NT("greaterRule"),
+            NT("lessRule"),
+            NT("includesRule"),
+            NT("isAnsweredRule")
+          )
+        )
+      );
+
+      addDiagram("logicalRule",
+        D(
+          CR(0,
+            NT("notRule"),
+            NT("andRule"),
+            NT("orRule")
+          )
+        )
+      );
+
+      addDiagram("elementExpressionRule",
+        D(
+          CR(0,
+            NT("valueRule"),
+            NT("valueAnswerRule")
+          )
+        )
+      );
+
+      addDiagram("arrayExpressionRule",
+        D(
+          CR(0,
+            NT("ValueArrayRule"),
+            NT("arrayAnswerRule")
+          )
+        )
+      );
+
+      addDiagram("equalsRule",
+        D(
+          S(
+            T("("),
+            T("="),
+            NT("elementExpressionRule"),
+            NT("elementExpressionRule"),
+            T(")")
+          )
+        )
+      );
+
+      addDiagram("greaterRule",
+        D(
+          S(
+            T("("),
+            T(">"),
+            NT("elementExpressionRule"),
+            NT("elementExpressionRule"),
+            T(")")
+          )
+        )
+      );
+
+      addDiagram("lessRule",
+        D(
+          S(
+            T("("),
+            T("<"),
+            NT("elementExpressionRule"),
+            NT("elementExpressionRule"),
+            T(")")
+          )
+        )
+      );
+
+      addDiagram("includesRule",
+        D(
+          S(
+            T("("),
+            T("includes"),
+            NT("arrayExpressionRule"),
+            NT("elementExpressionRule"),
+            T(")")
+          )
+        )
+      );
+
+      addDiagram("isAnsweredRule",
+        D(
+          S(
+            T("("),
+            T("isAnswered"),
+            NT("IdentifierRule"),
+            T(")")
+          )
+        )
+      );
+
+      addDiagram("notRule",
+        D(
+          S(
+            T("("),
+            T("not"),
+            NT("booleanExpressionRule"),
+            T(")")
+          )
+        )
+      );
+
+      addDiagram("andRule",
+        D(
+          S(
+            T("("),
+            T("and"),
+            NT("booleanExpressionRule"),
+            NT("booleanExpressionRule"),
+            T(")")
+          )
+        )
+      );
+
+      addDiagram("orRule",
+        D(
+          S(
+            T("("),
+            T("or"),
+            NT("booleanExpressionRule"),
+            NT("booleanExpressionRule"),
+            T(")")
+          )
+        )
+      );
+
+      addDiagram("valueRule",
+        D(
+          CR(0,
+            NT("StringRule"),
+            NT("NumericRule")
+          )
+        )
+      );
+
+      addDiagram("valueAnswerRule",
+        D(
+          S(
+            T("("),
+            T("answer"),
+            NT("IdentifierRule"),
+            T(")")
+          )
+        )
+      );
+
+      addDiagram("arrayAnswerRule",
+        D(
+          S(
+            T("("),
+            T("arrayAnswer"),
+            NT("IdentifierRule"),
+            T(")")
+          )
+        )
+      );
+
+      addDiagram("StringRule",
+        D(T("StringValue"))
+      );
+
+      addDiagram("NumericRule",
+        D(T("NumericValue"))
+      );
+
+      addDiagram("ValueArrayRule",
+        D(
+          CR(0,
+            T("StringArrayValue"),
+            T("NumericArrayValue")
+          )
+        )
+      );
+
+      addDiagram("IdentifierRule",
+        D(T("Identifier"))
+      );
+    });
+  </script>
+</body>
+</html>
